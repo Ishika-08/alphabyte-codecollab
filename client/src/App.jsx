@@ -3,7 +3,7 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import ResetPassword from "./pages/resetPassword";
 import LandingPage from "./pages/landingPage";
-import AboutUs from "./components/landingpage/AboutUs";
+import AboutUs from "./components/LandingPage/AboutUs";
 // import Editor from "./pages/Editor/Editor";
 import Editor1 from "./pages/Editor/Editor1";
 import Form from './pages/form'
