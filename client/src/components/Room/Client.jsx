@@ -1,90 +1,112 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from 'react-avatar';
-import io from 'socket.io-client';
+import * as faceapi from 'face-api.js';
 
-const Client = ({ username, roomId }) => {
+
+const Client = ({ username, roomId, socketRef, key }) => {
     const [videoEnabled, setVideoEnabled] = useState(true);
     const [audioEnabled, setAudioEnabled] = useState(true);
+    const [remoteStream, setRemoteStream] = useState(null);
     const [localStream, setLocalStream] = useState(null);
-    const [remoteStreams, setRemoteStreams] = useState([]);
+    const [numFaces, setNumFaces] = useState(0);
     const videoRef = useRef(null);
-    const socketRef = useRef();
 
     useEffect(() => {
-        socketRef.current = io('http://localhost:5000'); // Change URL as per your server configuration
-
-        socketRef.current.emit('join-room', { roomId, username });
-
-        const initMediaStream = async () => {
+        // Load face detection model
+        const loadModel = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                setLocalStream(stream);
-                console.log(stream)
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-                socketRef.current.emit('new-stream', { roomId, stream });
+                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@0.0.1/weights');
+                // Start face detection after the model is loaded
+                setInterval(async () => {
+                    const detections = await faceapi.detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions());
+                    setNumFaces(detections.length);
+                }, 1000);
             } catch (error) {
-                console.error('getUserMedia error:', error);
+                console.error('Error loading model:', error);
             }
         };
 
-        initMediaStream();
+        loadModel();
 
-        socketRef.current.on('new-remote-stream', ({ stream }) => {
-            setRemoteStreams(prevStreams => [...prevStreams, stream]);
+        // Event listener to handle incoming remote stream
+        socketRef.current.on('new-stream', ({ stream }) => {
+            if (stream) {
+                setRemoteStream(stream);
+            }
         });
 
+        // Clean up function to remove the remote stream when unmounting
+        return () => {
+            setRemoteStream(null);
+        };
+    }, [socketRef]);
+
+    useEffect(() => {
+        // Get the local video stream
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                setLocalStream(stream);
+            })
+            .catch(error => {
+                console.error('Error accessing local video stream:', error);
+            });
+
+        // Clean up function to stop the local stream when unmounting
         return () => {
             if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
             }
-            socketRef.current.disconnect();
         };
-    }, [roomId, username]);
+    }, []);
+
+    useEffect(() => {
+        // Set the local stream as the video source when available
+        if (localStream && videoRef.current) {
+            videoRef.current.srcObject = localStream;
+
+            // Start face detection
+            setInterval(async () => {
+                const detections = await faceapi.detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions());
+                setNumFaces(detections.length);
+            }, 1000);
+        }
+    }, [localStream]);
 
     const toggleVideo = () => {
-        if (localStream) {
-            const videoTrack = localStream.getVideoTracks()[0];
-            videoTrack.enabled = !videoTrack.enabled;
-            setVideoEnabled(videoTrack.enabled);
-        }
+        setVideoEnabled(prev => !prev);
     };
 
     const toggleAudio = () => {
-        if (localStream) {
-            const audioTrack = localStream.getAudioTracks()[0];
-            audioTrack.enabled = !audioTrack.enabled;
-            setAudioEnabled(audioTrack.enabled);
-        }
+        setAudioEnabled(prev => !prev);
     };
 
     return (
         <div className="client">
-            {username && (
-                <div className="userInfo">
-                    <Avatar name={username} size={50} round="14px" />
-                    <span className="userName">{username}</span>
-                </div>
-            )}
             <div className="controls">
-                <button className={`btn ${videoEnabled ? 'active' : ''}`} onClick={toggleVideo}>
-                    {videoEnabled ? 'Stop Video' : 'Start Video'}
-                </button>
-                <button className={`btn ${audioEnabled ? 'active' : ''}`} onClick={toggleAudio}>
-                    {audioEnabled ? 'Mute Audio' : 'Unmute Audio'}
-                </button>
+                <button onClick={toggleVideo}>{videoEnabled ? 'Disable Video' : 'Enable Video'}</button>
+                <button onClick={toggleAudio}>{audioEnabled ? 'Disable Audio' : 'Enable Audio'}</button>
             </div>
-            <div>
-                <video ref={videoRef} className="local-video" autoPlay muted />
+            <div className="video-container">
+                {/* Show local video stream if video is enabled, otherwise show avatar */}
+                {videoEnabled && localStream && (
+                    <video className="local-video" autoPlay muted ref={videoRef} style={{ width: '150px' }} />
+                )}
+                {!videoEnabled && (
+                    <Avatar
+                        name={username}
+                        size={150} // Set the size of the avatar to match the video width
+                        round="14px"
+                    />
+                )}
+                {/* Show remote stream if available */}
+                {remoteStream && (
+                    <video className="remote-video" autoPlay ref={videoRef} style={{ width: '150px' }} />
+                )}
             </div>
-            <div>
-                {remoteStreams.map((stream, index) => (
-                    <div key={index}>
-                        <video className="remote-video" autoPlay ref={video => { if (video) video.srcObject = stream; }} />
-                    </div>
-                ))}
-            </div>
+            {/* Display warning if more than one face detected */}
+            {numFaces > 1 && <div style={{ color: 'red' }}>Multiple people detected!</div>}
         </div>
     );
 };

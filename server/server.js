@@ -6,12 +6,11 @@ const { Server } = require('socket.io');
 const ACTIONS = require('./Actions');
 
 const server = http.createServer(app);
-const io = new Server(server,{
+const io = new Server(server, {
     cors: {
         origin: "*",
         methods: ["GET", "POST"]
     }
-
 });
 
 // Map to store username by socketId
@@ -32,7 +31,6 @@ function getAllConnectedClients(roomId) {
 // Event listener for connection
 io.on('connection', (socket) => {
     // Event listener for JOIN action
-    cors: true,
     socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
         userSocketMap[socket.id] = username;
         socket.join(roomId);
@@ -66,15 +64,11 @@ io.on('connection', (socket) => {
     });
 
     // Event listener for NEW_STREAM action
-    // Event listener for NEW_STREAM action
     socket.on(ACTIONS.NEW_STREAM, ({ roomId, stream }) => {
-        console.log('Received new stream', stream);
-        
-        console.log(roomId)
+        // console.log('Received new stream', stream);
         if (stream) {
             // Check if the socket is in the room before broadcasting
             if (io.sockets.adapter.rooms.has(roomId)) {
-
                 // Emit to all sockets in the room except the current one
                 socket.to(roomId).emit(ACTIONS.NEW_STREAM, { stream });
             } else {
@@ -83,6 +77,12 @@ io.on('connection', (socket) => {
         } else {
             console.error('Invalid stream object received:', stream);
         }
+    });
+
+    // Event listener for START_MCQ_TEST action
+    socket.on(ACTIONS.START_MCQ_TEST, ({ roomId, testData }) => {
+        io.to(roomId).emit(ACTIONS.START_MCQ_TEST, { testData });
+        console.log('Received MCQ test data:', testData);
     });
 
     // Event listener for disconnecting
@@ -100,6 +100,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => 
-console.log(`Listening on port ${PORT}`)
+server.listen(PORT, () =>
+    console.log(`Listening on port ${PORT}`)
 );

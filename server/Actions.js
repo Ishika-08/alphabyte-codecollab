@@ -10,6 +10,7 @@ const ACTIONS = {
     NEW_STREAM: 'new-stream',
     PUBLIC_STREAM: 'public-stream',
     NEW_STREAM: 'new-stream',
+    START_MCQ_TEST: 'start_mcq_test',
 };
 
 module.exports = ACTIONS;

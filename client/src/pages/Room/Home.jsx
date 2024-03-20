@@ -8,23 +8,32 @@ const Home = () => {
 
     const [roomId, setRoomId] = useState('');
     const [username, setUsername] = useState('');
+    const [role, setRole] = useState('');
+
     const createNewRoom = (e) => {
         e.preventDefault();
         const id = uuidV4();
         setRoomId(id);
+        setRole('interviewer'); // Set role to interviewer when creating a new room
         toast.success('Created a new room');
     };
 
     const joinRoom = () => {
         if (!roomId || !username) {
-            toast.error('ROOM ID & username is required');
+            toast.error('ROOM ID & username are required');
             return;
+        }
+
+        // If role is not set to interviewer, set it to candidate
+        if (role !== 'interviewer') {
+            setRole('candidate');
         }
 
         // Redirect
         navigate(`/editor/${roomId}`, {
             state: {
                 username,
+                role,
             },
         });
     };
@@ -34,6 +43,7 @@ const Home = () => {
             joinRoom();
         }
     };
+
     return (
         <div className="homePageWrapper">
             <div className="formWrapper">
@@ -61,20 +71,14 @@ const Home = () => {
                     </button>
                     <span className="createInfo">
                         If you don't have an invite then create &nbsp;
-                        <a
-                            onClick={createNewRoom}
-                            href=""
-                            className="createNewBtn"
-                        >
+                        <button onClick={createNewRoom} className="createNewBtn">
                             new room
-                        </a>
+                        </button>
                     </span>
                 </div>
             </div>
             <footer>
-                <h4>
-                    Built with 💛 &nbsp; by &nbsp; Code Collab
-                </h4>
+                <h4>Built with 💛 &nbsp; by &nbsp; Code Collab</h4>
             </footer>
         </div>
     );

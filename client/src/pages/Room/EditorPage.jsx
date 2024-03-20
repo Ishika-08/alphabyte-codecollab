@@ -4,6 +4,7 @@ import Client from '../../components/Room/Client';
 import Editor1 from '../../components/Room/Editor1';
 import { initSocket } from '../../socket';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import MCQModal from '../../components/Room/MCQModal';
 
 const ACTIONS = {
     JOIN: 'join',
@@ -13,6 +14,7 @@ const ACTIONS = {
     NEW_STREAM: 'new-stream',
     TOGGLE_VIDEO: 'toggle-video',
     TOGGLE_AUDIO: 'toggle-audio',
+    START_MCQ_TEST: 'start_mcq_test',
 };
 
 const EditorPage = () => {
@@ -20,13 +22,16 @@ const EditorPage = () => {
     const videoRef = useRef(null);
     const location = useLocation();
     const { roomId } = useParams();
-    const [videoEnabled, setVideoEnabled] = useState(true);
-    const [audioEnabled, setAudioEnabled] = useState(true);
+    const locationState = useLocation().state; // Access location state
+    const role = locationState ? locationState.role : '';
+
+    const navigate = useNavigate();
     const [localStream, setLocalStream] = useState(null);
     const [remoteStreams, setRemoteStreams] = useState([]);
-    const reactNavigator = useNavigate();
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [clients, setClients] = useState([]);
     const [code, setCode] = useState('');
+    const [mcqTestData, setMcqTestData] = useState(null);
 
     useEffect(() => {
         const init = async () => {
@@ -37,7 +42,14 @@ const EditorPage = () => {
             });
 
             socketRef.current.on(ACTIONS.JOINED, ({ clients, code }) => {
-                setClients(clients);
+                setClients(prevClients => {
+                    // Filter out any clients that are already in the state
+                    const filteredClients = clients.filter(client => {
+                        return !prevClients.some(prevClient => prevClient.socketId === client.socketId);
+                    });
+                    // Concatenate the new clients with the existing ones
+                    return [...prevClients, ...filteredClients];
+                });
                 setCode(code);
             });
 
@@ -50,114 +62,15 @@ const EditorPage = () => {
                 );
             });
 
-            navigator.mediaDevices
-                .getUserMedia({ video: true, audio: true })
-                .then(stream => {
-                    setLocalStream(stream);
-                    socketRef.current.emit(ACTIONS.NEW_STREAM, { roomId, stream });
-                })
-                .catch(error => console.error('getUserMedia error:', error));
-
-            socketRef.current.on(ACTIONS.NEW_STREAM, ({ roomId, stream }) => {
-                setRemoteStreams(prevStreams => [
-                    ...prevStreams,
-                    { socketId: socketRef.current.id, stream },
-                ]);
-            });
+            // Rest of your code...
         };
         init();
 
-        return () => {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
-            if (socketRef.current) {
-                socketRef.current.disconnect();
-            }
-        };
-    }, []);
-    useEffect(() => {
-        remoteStreams.forEach(({ socketId, localStream }) => {
-            console.log('Remote stream:', localStream);
-            if (localStream && Object.keys(localStream).length > 0) {
-                const videoElement = document.getElementById(socketId);
-                if (videoElement) {
-                    if (localStream instanceof MediaStream) {
-                        videoElement.srcObject = localStream;
-                    } else {
-                        console.error("Invalid stream object:", localStream);
-                    }
-                } else {
-                    console.error("Invalid video element for socket ID:", socketId);
-                }
-            } else {
-                console.error("Received empty or invalid stream object:", localStream);
-            }
-        });
-    }, [remoteStreams]);
+        // Rest of your code...
+    }, [roomId, location.state, localStream]);
 
-    // Inside the useEffect hook for initializing local stream
-    useEffect(() => {
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(stream => {
-                console.log('Local stream:', stream);
-                setLocalStream(stream);
-                socketRef.current.emit(ACTIONS.NEW_STREAM, { roomId, localStream });
-            })
-            .catch(error => console.error('getUserMedia error:', error));
-    }, []);
-
-
-
-    const toggleVideo = () => {
-        if (localStream) {
-            console.log('Local stream:', localStream);
-            const videoTracks = localStream.getVideoTracks();
-            if (videoTracks.length > 0) {
-                const track = videoTracks[0];
-                track.enabled = !track.enabled;
-                setVideoEnabled(track.enabled);
-                setRemoteStreams(prevStreams => {
-                    return prevStreams.map(stream => {
-                        if (stream.socketId === socketRef.current.id) {
-                            return { ...stream, stream: track };
-                        }
-                        return stream;
-                    });
-                });
-
-                const updatedStream = new MediaStream([
-                    ...localStream.getAudioTracks(),
-                    track,
-                ]);
-                setLocalStream(updatedStream);
-                if (videoRef.current) {
-                    videoRef.current.srcObject = updatedStream;
-                }
-            } else {
-                console.error('No video tracks found in the local stream.');
-            }
-        } else {
-            console.error('Local stream is null or undefined.');
-        }
-    };
-
-    const toggleAudio = () => {
-        if (localStream) {
-            const audioTracks = localStream.getAudioTracks();
-            if (audioTracks.length > 0) {
-                const track = audioTracks[0];
-                track.enabled = !track.enabled;
-                setAudioEnabled(track.enabled);
-            } else {
-                console.error('No audio tracks found in the local stream.');
-            }
-        } else {
-            console.error('Local stream is null or undefined.');
-        }
-    };
-
-    async function copyRoomId() {
+    // Function to handle copying the room ID
+    const copyRoomId = async () => {
         try {
             await navigator.clipboard.writeText(roomId);
             toast.success('Room ID has been copied to your clipboard');
@@ -165,11 +78,55 @@ const EditorPage = () => {
             toast.error('Could not copy the Room ID');
             console.error(err);
         }
-    }
+    };
 
-    function leaveRoom() {
-        reactNavigator('/');
-    }
+    // Function to leave the room
+    const leaveRoom = () => {
+        navigate('/');
+    };
+    const openRoomModal = () => {
+        setIsModalOpen(true);
+    };
+
+    // Function to start MCQ test
+    const startMCQTest = () => {
+        const testData = {
+            questions: [
+                {
+                    question: 'What is the capital of France?',
+                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
+                    answer: 'Paris',
+                },
+                {
+                    question: 'What is the capital of Germany?',
+                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
+                    answer: 'Berlin',
+                },
+                {
+                    question: 'What is the capital of Spain?',
+                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
+                    answer: 'Madrid',
+                },
+                {
+                    question: 'What is the capital of England?',
+                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
+                    answer: 'London',
+                },
+            ],
+        };
+        setMcqTestData(testData);
+        if (role === 'candidate') {
+            setIsModalOpen(true);
+        }
+
+        // Emit the event to start MCQ test to all clients in the room
+        socketRef.current.emit(ACTIONS.START_MCQ_TEST, { roomId, testData });
+    };
+
+    // Function to close the MCQ modal
+    const closeModal = () => {
+        setIsModalOpen(false);
+    };
 
     return (
         <div className="mainWrap">
@@ -180,50 +137,16 @@ const EditorPage = () => {
                     </div>
                     <h3>Connected</h3>
                     <div className="clientsList">
-                        <div className="clientsList">
-                            {clients.map((client, index) => (
-                                <Client
-                                    key={`${client.socketId}-${index}`} // Ensure keys are unique
-                                    username={client.username}
-                                    // socket={socketRef.current}
-                                    videoRef={videoRef}
-                                    // toggleAudio={toggleAudio}
-                                    // toggleVideo={toggleVideo}
-                                    roomId={roomId}
-                                />
-                            ))}
-                        </div>
-
+                        {clients.map(client => (
+                            <Client
+                                key={client.socketId} // Use socketId as the key for uniqueness
+                                username={client.username}
+                                socketRef={socketRef}
+                                roomId={roomId}
+                            />
+                        ))}
                     </div>
                 </div>
-
-                {/* <div className="controls">
-                    <button className={`btn ${videoEnabled ? 'active' : ''}`} onClick={toggleVideo}>
-                        {videoEnabled ? 'Stop Video' : 'Start Video'}
-                    </button>
-                    <button className={`btn ${audioEnabled ? 'active' : ''}`} onClick={toggleAudio}>
-                        {audioEnabled ? 'Mute Audio' : 'Unmute Audio'}
-                    </button>
-                </div> */}
-                {/* <div className="videoWrapper">
-                    {localStream ? (
-                        <div>
-                            <video ref={videoRef} className="local-video" autoPlay muted />
-                        </div>
-                    ) : (
-                        <p>No local stream available</p>
-                    )}
-
-                    <div className="remoteVideos">
-                        {remoteStreams.map(({ socketId }, index) => (
-                            <div key={`${socketId}-${index}`}>
-                                <video id={socketId} className="remote-video" autoPlay />
-                                <h1>{socketId}</h1>
-                            </div>
-                        ))}
-
-                    </div>
-                </div> */}
 
                 <button className="btn copyBtn" onClick={copyRoomId}>
                     Copy ROOM ID
@@ -231,6 +154,18 @@ const EditorPage = () => {
                 <button className="btn leaveBtn" onClick={leaveRoom}>
                     Leave
                 </button>
+                {role === 'interviewer' ? (
+                    <button className="btnmcqBtn" onClick={startMCQTest}>
+                        Start MCQ Test
+                    </button>
+                ) : (
+                    <button className="btn redirectBtn" onClick={openRoomModal}>
+                        Redirect
+                    </button>
+                )}
+                {/* Render MCQModal only when isModalOpen is true */}
+                <MCQModal isOpen={isModalOpen} closeModal={closeModal} mcqTestData={mcqTestData} />
+
             </div>
             <div className="editorWrap">
                 <Editor1 socketRef={socketRef} roomId={roomId} initialCode={code} />
