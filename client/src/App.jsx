@@ -9,7 +9,7 @@ import Editor1 from "./pages/Editor/Editor1";
 import Form from './pages/form'
 
 import Dashboard from "./components/Dashboard/dashboard";
-
+import Candidate from "./pages/Candidate";
 import { Toaster } from 'react-hot-toast';
 import Home from "./pages/Room/Home";
 import EditorPage from "./pages/Room/EditorPage";
@@ -49,6 +49,7 @@ export default function App() {
                     <Route path="/editor/:roomId" element={<EditorPage />}></Route>
                     <Route path="/interviewer-form" element={<Form />} />
                     <Route path="/room" element={<Home />} />
+                    <Route path="/candidate" element={<Candidate />} />
 
                 </Routes>
             </Router>
