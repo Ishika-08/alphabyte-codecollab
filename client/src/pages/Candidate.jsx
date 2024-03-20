@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // React Router v6, for v5 use useHistory
-
+import { useNavigate } from 'react-router-dom'; 
 const Candidate = () => {
   const [candidates, setCandidates] = useState([]);
-  const navigate = useNavigate(); // React Router v6, for v5 use useHistory
-
+  const navigate = useNavigate(); 
   useEffect(() => {
     fetchCandidates('kk44');
   }, []);
 
   const fetchCandidates = async (interviewerId) => {
+    console.log("triggered")
     try {
       const response = await fetch(`http://localhost:3000/interviewees/${interviewerId}`, {
         method: 'GET',
