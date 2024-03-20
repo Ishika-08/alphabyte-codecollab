@@ -1,33 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from 'react-avatar';
-import * as faceapi from 'face-api.js';
-
 
 const Client = ({ username, roomId, socketRef, key }) => {
     const [videoEnabled, setVideoEnabled] = useState(true);
     const [audioEnabled, setAudioEnabled] = useState(true);
     const [remoteStream, setRemoteStream] = useState(null);
     const [localStream, setLocalStream] = useState(null);
-    const [numFaces, setNumFaces] = useState(0);
     const videoRef = useRef(null);
 
     useEffect(() => {
-        // Load face detection model
-        const loadModel = async () => {
-            try {
-                await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@0.0.1/weights');
-                // Start face detection after the model is loaded
-                setInterval(async () => {
-                    const detections = await faceapi.detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions());
-                    setNumFaces(detections.length);
-                }, 1000);
-            } catch (error) {
-                console.error('Error loading model:', error);
-            }
-        };
-
-        loadModel();
-
         // Event listener to handle incoming remote stream
         socketRef.current.on('new-stream', ({ stream }) => {
             if (stream) {
@@ -65,12 +46,6 @@ const Client = ({ username, roomId, socketRef, key }) => {
         // Set the local stream as the video source when available
         if (localStream && videoRef.current) {
             videoRef.current.srcObject = localStream;
-
-            // Start face detection
-            setInterval(async () => {
-                const detections = await faceapi.detectAllFaces(videoRef.current, new faceapi.TinyFaceDetectorOptions());
-                setNumFaces(detections.length);
-            }, 1000);
         }
     }, [localStream]);
 
@@ -90,10 +65,9 @@ const Client = ({ username, roomId, socketRef, key }) => {
             </div>
             <div className="video-container">
                 {/* Show local video stream if video is enabled, otherwise show avatar */}
-                {videoEnabled && localStream && (
+                {videoEnabled ? (
                     <video className="local-video" autoPlay muted ref={videoRef} style={{ width: '150px' }} />
-                )}
-                {!videoEnabled && (
+                ) : (
                     <Avatar
                         name={username}
                         size={150} // Set the size of the avatar to match the video width
@@ -105,8 +79,6 @@ const Client = ({ username, roomId, socketRef, key }) => {
                     <video className="remote-video" autoPlay ref={videoRef} style={{ width: '150px' }} />
                 )}
             </div>
-            {/* Display warning if more than one face detected */}
-            {numFaces > 1 && <div style={{ color: 'red' }}>Multiple people detected!</div>}
         </div>
     );
 };

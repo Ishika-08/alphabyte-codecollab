@@ -81,7 +81,8 @@ io.on('connection', (socket) => {
 
     // Event listener for START_MCQ_TEST action
     socket.on(ACTIONS.START_MCQ_TEST, ({ roomId, testData }) => {
-        io.to(roomId).emit(ACTIONS.START_MCQ_TEST, { testData });
+        // Emit the event to all clients in the room except the current client
+        socket.to(roomId).emit(ACTIONS.START_MCQ_TEST, { testData });
         console.log('Received MCQ test data:', testData);
     });
 

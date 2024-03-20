@@ -104,14 +104,14 @@ const Data ={
         ],
     javascript: [
             {KEY: 1,
-            Question: "Which of the following is a correct way to declare a variable in JavaScript?",
-            Options: [
-                    `A) var name = "John"; `,
-                    `B) variable name = "John";,`
-                    `C) v name = "John";`,
-                    `D) string name = "John";`
-                ],
-            Answer: 0
+            // Question: "Which of the following is a correct way to declare a variable in JavaScript?",
+            // Options: [
+            //         `A) var name = "John"; `,
+            //         "B) variable name = "John",
+            //         `C) v name = "John";`,
+            //         `D) string name = "John";`
+            //     ],
+            // Answer: 0
             },
             {KEY: 2,
             Question: "How do you create a function in JavaScript?",

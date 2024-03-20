@@ -1,7 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import Data from '../../data/data'; // Importing the quiz data
 
-const MCQModal = ({ isOpen, closeModal, mcqTestData }) => {
+const MCQModal = ({ isOpen, closeModal }) => {
+    const [selectedAnswers, setSelectedAnswers] = useState({});
+
+    const handleSelectAnswer = (questionIndex, answerIndex) => {
+        setSelectedAnswers({
+            ...selectedAnswers,
+            [questionIndex]: answerIndex
+        });
+    };
+    // const handleOptionClick = (e) => {
+    //     // Prevent the event from bubbling up and triggering the onClose event of the Dialog
+    //     e.stopPropagation();
+    // };
+
+    const handleModalContentClick = (e) => {
+        // Prevent the event from bubbling up and triggering the onClose event of the Dialog
+        e.stopPropagation();
+    };
+
+    const isAnswerCorrect = (questionIndex, answerIndex) => {
+        const correctAnswerIndex = Data.mern[questionIndex].Answer;
+        return selectedAnswers[questionIndex] === correctAnswerIndex;
+    };
+
+    const handleOptionClick = (e) => {
+        // Prevent the event from bubbling up and triggering the onClose event of the Dialog
+        e.stopPropagation();
+    };
+
     return (
         <Transition show={isOpen} as={React.Fragment}>
             <Dialog
@@ -21,34 +50,46 @@ const MCQModal = ({ isOpen, closeModal, mcqTestData }) => {
                         leaveFrom="opacity-100 scale-100"
                         leaveTo="opacity-0 scale-95"
                     >
-                        <div className="inline-block align-middle bg-white rounded-lg p-6 my-8 w-full max-w-md text-left shadow-xl">
+                        <div className="inline-block align-middle bg-white rounded-lg p-6 my-8 w-full max-w-md text-left shadow-xl" onClick={handleModalContentClick}>
                             <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                                MCQ Test
+                                MERN Stack MCQ Test
                             </Dialog.Title>
-                            {mcqTestData && (
-                                <div className="mt-4">
-                                    {/* Render MCQ test questions/options here */}
-                                    {mcqTestData.questions.map((question, index) => (
-                                        <div key={index} className="mb-4">
-                                            <p className="font-semibold">{question.question}</p>
-                                            <ul className="list-disc list-inside">
-                                                {question.options.map((option, optionIndex) => (
-                                                    <li key={optionIndex}>{option}</li>
-                                                ))}
-                                            </ul>
+                            <div className="mt-4">
+                                {/* Render MERN stack MCQ test questions here */}
+                                {Data.mern.map((question, index) => (
+                                    <div key={question.KEY} className="mb-4">
+                                        <p className="font-semibold">{question.Question}</p>
+                                        <div className="options">
+                                            {question.Options.map((option, optionIndex) => (
+                                                <div key={optionIndex} className="option">
+                                                    <input
+                                                        type="radio"
+                                                        id={`option-${index}-${optionIndex}`}
+                                                        name={`option-${index}`}
+                                                        value={optionIndex}
+                                                        checked={selectedAnswers[question.KEY] === optionIndex}
+                                                        onChange={() => handleSelectAnswer(question.KEY, optionIndex)}
+                                                    />
+                                                    <label htmlFor={`option-${index}-${optionIndex}`}>{option}</label>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                            <div className="mt-4 text-right">
+                                        {selectedAnswers[question.KEY] !== undefined && (
+                                            <p className={isAnswerCorrect(index, selectedAnswers[question.KEY]) ? "text-green-600" : "text-red-600"}>
+                                                {isAnswerCorrect(index, selectedAnswers[question.KEY]) ? "Correct!" : "Incorrect!"}
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="mt-4 flex justify-end">
                                 <button
                                     type="button"
-                                    className="btn mr-2"
                                     onClick={closeModal}
+                                    className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:bg-gray-700"
                                 >
                                     Close
                                 </button>
-                                {/* Add any other buttons or actions */}
                             </div>
                         </div>
                     </Transition.Child>

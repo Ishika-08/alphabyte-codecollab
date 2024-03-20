@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { v4 as uuidV4 } from 'uuid';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -14,10 +14,16 @@ const Home = () => {
         e.preventDefault();
         const id = uuidV4();
         setRoomId(id);
-        setRole('interviewer'); // Set role to interviewer when creating a new room
+        setRole('interviewer');
+
+        // Set role to interviewer when creating a new room
         toast.success('Created a new room');
     };
-
+    useEffect(() => {
+        if (role !== 'interviewer') {
+            setRole('candidate');
+        }
+    }, [role]);
     const joinRoom = () => {
         if (!roomId || !username) {
             toast.error('ROOM ID & username are required');

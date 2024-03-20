@@ -5,6 +5,7 @@ import Editor1 from '../../components/Room/Editor1';
 import { initSocket } from '../../socket';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import MCQModal from '../../components/Room/MCQModal';
+import Data from '../../data/data';
 
 const ACTIONS = {
     JOIN: 'join',
@@ -22,15 +23,14 @@ const EditorPage = () => {
     const videoRef = useRef(null);
     const location = useLocation();
     const { roomId } = useParams();
-    const locationState = useLocation().state; // Access location state
+    const locationState = useLocation().state;
     const role = locationState ? locationState.role : '';
 
-    const navigate = useNavigate();
     const [localStream, setLocalStream] = useState(null);
     const [remoteStreams, setRemoteStreams] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [clients, setClients] = useState([]);
     const [code, setCode] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false); // State for controlling the modal
     const [mcqTestData, setMcqTestData] = useState(null);
 
     useEffect(() => {
@@ -43,11 +43,9 @@ const EditorPage = () => {
 
             socketRef.current.on(ACTIONS.JOINED, ({ clients, code }) => {
                 setClients(prevClients => {
-                    // Filter out any clients that are already in the state
                     const filteredClients = clients.filter(client => {
                         return !prevClients.some(prevClient => prevClient.socketId === client.socketId);
                     });
-                    // Concatenate the new clients with the existing ones
                     return [...prevClients, ...filteredClients];
                 });
                 setCode(code);
@@ -62,14 +60,31 @@ const EditorPage = () => {
                 );
             });
 
-            // Rest of your code...
+            socketRef.current.on(ACTIONS.NEW_STREAM, ({ roomId, stream }) => {
+                setRemoteStreams(prevStreams => [
+                    ...prevStreams,
+                    { socketId: socketRef.current.id, stream },
+                ]);
+            });
+
+            socketRef.current.on(ACTIONS.START_MCQ_TEST, ({ roomId, testData }) => {
+                setMcqTestData(testData);
+                setIsModalOpen(true); // Open the modal when the MCQ test starts
+            });
+
         };
         init();
 
-        // Rest of your code...
+        return () => {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+            }
+            if (socketRef.current) {
+                socketRef.current.disconnect();
+            }
+        };
     }, [roomId, location.state, localStream]);
 
-    // Function to handle copying the room ID
     const copyRoomId = async () => {
         try {
             await navigator.clipboard.writeText(roomId);
@@ -80,54 +95,20 @@ const EditorPage = () => {
         }
     };
 
-    // Function to leave the room
     const leaveRoom = () => {
         navigate('/');
     };
-    const openRoomModal = () => {
-        setIsModalOpen(true);
-    };
 
-    // Function to start MCQ test
     const startMCQTest = () => {
-        const testData = {
-            questions: [
-                {
-                    question: 'What is the capital of France?',
-                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
-                    answer: 'Paris',
-                },
-                {
-                    question: 'What is the capital of Germany?',
-                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
-                    answer: 'Berlin',
-                },
-                {
-                    question: 'What is the capital of Spain?',
-                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
-                    answer: 'Madrid',
-                },
-                {
-                    question: 'What is the capital of England?',
-                    options: ['Paris', 'London', 'Berlin', 'Madrid'],
-                    answer: 'London',
-                },
-            ],
-        };
-        setMcqTestData(testData);
         if (role === 'candidate') {
-            setIsModalOpen(true);
+            setIsModalOpen(true); // Open the modal when starting the MCQ test
         }
-
-        // Emit the event to start MCQ test to all clients in the room
-        socketRef.current.emit(ACTIONS.START_MCQ_TEST, { roomId, testData });
+        socketRef.current.emit(ACTIONS.START_MCQ_TEST, { roomId, testData: Data });
     };
 
-    // Function to close the MCQ modal
     const closeModal = () => {
-        setIsModalOpen(false);
+        setIsModalOpen(false); // Close the modal when closeModal is called
     };
-
     return (
         <div className="mainWrap">
             <div className="aside">
@@ -137,11 +118,11 @@ const EditorPage = () => {
                     </div>
                     <h3>Connected</h3>
                     <div className="clientsList">
-                        {clients.map(client => (
+                        {clients.map((client, index) => (
                             <Client
-                                key={client.socketId} // Use socketId as the key for uniqueness
+                                key={`${client.socketId}-${index}`} // Ensure keys are unique
                                 username={client.username}
-                                socketRef={socketRef}
+                                socketRef={socketRef} // Pass the socketRef prop here
                                 roomId={roomId}
                             />
                         ))}
@@ -164,7 +145,8 @@ const EditorPage = () => {
                     </button>
                 )}
                 {/* Render MCQModal only when isModalOpen is true */}
-                <MCQModal isOpen={isModalOpen} closeModal={closeModal} mcqTestData={mcqTestData} />
+                {mcqTestData && <MCQModal isOpen={isModalOpen} closeModal={closeModal} />}
+
 
             </div>
             <div className="editorWrap">
