@@ -7,7 +7,7 @@ var compiler = require('compilex');
 exports.runPython = async (req, res) => {
     const code = req.body.code;
     const input = req.body.input;
-    fs.writeFileSync('test.py', req.body.code);
+    fs.writeFileSync('test.py', code);
 
     if(!input){
 
@@ -18,7 +18,7 @@ exports.runPython = async (req, res) => {
     };
 
     PythonShell.run('test.py', options).then(messages=>{
-    // console.log('results: %j', messages);
+    console.log('results: %j', messages);
     res.json({result: messages[0]});
     });
 }
@@ -65,13 +65,13 @@ exports.compileCode = async (req, res) => {
             if (!input) {
                 var envData = { OS: "windows", cmd: "g++", options: { timeout: 10000 } };
                 compiler.compileCPP(envData, code, function (data) {
-                    console.log(data)
+                    console.log("data here", data)
                     if (data.output || data.output==="") {
-                        res.send(data);
+                        res.json(data);
                     }
                     else {
                         console.log(data)
-                        res.send({ output: "error" })
+                        res.json({ output: "error" })
                     }
                 });
             }
