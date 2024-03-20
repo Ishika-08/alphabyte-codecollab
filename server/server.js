@@ -6,7 +6,13 @@ const { Server } = require('socket.io');
 const ACTIONS = require('./Actions');
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server,{
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+
+});
 
 // Map to store username by socketId
 const userSocketMap = {};
@@ -26,6 +32,7 @@ function getAllConnectedClients(roomId) {
 // Event listener for connection
 io.on('connection', (socket) => {
     // Event listener for JOIN action
+    cors: true,
     socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
         userSocketMap[socket.id] = username;
         socket.join(roomId);
@@ -93,4 +100,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+server.listen(PORT, () => 
+console.log(`Listening on port ${PORT}`)
+);

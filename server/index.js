@@ -7,10 +7,17 @@ const mongoose = require('mongoose');
 const Interviewee = require('./models/interviewee'); 
 const app = express();
 const port = 3000;
+const connectDb = require('./config/connect');
+connectDb();
 // const { router } = require('./routes/RoomRoute');
 
+const corsOptions = {
+  origin: ['http://localhost:5137', 'http://localhost:5000'], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+  allowedHeaders: ['Content-Type', 'Authorization'] 
+};
 
-app.use(cors())
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -19,7 +26,8 @@ const EditorRoutes = require('./routes/EditorRoutes');
 
 app.use('/editor', EditorRoutes);
 
-app.post('/upload', upload.single('file'), async (req, res) => {
+app.post('/upload/:interviewerId', upload.single('file'), async (req, res) => {
+
     if (!req.file) {
         return res.status(400).send('No file uploaded.');
     }
@@ -31,7 +39,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
         const data = xlsx.utils.sheet_to_json(worksheet);
 
         const intervieweesData = data.map(item => ({
-            userId: req.body.userId, 
+            interviewerId: req.params.interviewerId, 
             name: item['Name'],
             email: item['Email'],
             phoneNumber: item['Phone Number'],
@@ -47,16 +55,19 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 
 // app.use('/', router);
 
-app.get('/interviewees', async (req, res) => {
-  const userId = req.body.userId;
+app.get('/interviewees/:interviewerId', async (req, res) => {
+  const interviewerId = req.params.interviewerId;
   try {
-    const interviewees = await Interviewee.find({ userId });
+    const interviewees = await Interviewee.find({ interviewerId});
     res.json(interviewees);
   } catch (error) {
     console.error('Failed to retrieve interviewees:', error);
     res.status(500).send('Error retrieving interviewee data.');
   }
 });
+
+
+
 
 
 app.listen(port, () => {
