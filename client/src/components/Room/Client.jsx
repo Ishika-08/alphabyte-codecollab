@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from 'react-avatar';
+import * as faceapi from 'face-api.js';
+import { CiVideoOff } from "react-icons/ci";
+import { CiVideoOn } from "react-icons/ci";
+import { AiTwotoneAudio } from "react-icons/ai";
+import { AiOutlineAudioMuted } from "react-icons/ai";
+
 
 const Client = ({ username, roomId, socketRef, key }) => {
     const [videoEnabled, setVideoEnabled] = useState(true);
@@ -60,8 +66,8 @@ const Client = ({ username, roomId, socketRef, key }) => {
     return (
         <div className="client">
             <div className="controls">
-                <button onClick={toggleVideo}>{videoEnabled ? 'Disable Video' : 'Enable Video'}</button>
-                <button onClick={toggleAudio}>{audioEnabled ? 'Disable Audio' : 'Enable Audio'}</button>
+                <button onClick={toggleVideo}>{videoEnabled ? <CiVideoOn/> : <CiVideoOff />}</button>
+                <button onClick={toggleAudio}>{audioEnabled ? <AiTwotoneAudio /> : <AiOutlineAudioMuted />}</button>
             </div>
             <div className="video-container">
                 {/* Show local video stream if video is enabled, otherwise show avatar */}

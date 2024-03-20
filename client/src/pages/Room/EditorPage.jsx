@@ -96,7 +96,7 @@ const EditorPage = () => {
     };
 
     const leaveRoom = () => {
-        navigate('/');
+        navigate('/dashboard');
     };
 
     const startMCQTest = () => {
@@ -139,11 +139,7 @@ const EditorPage = () => {
                     <button className="btnmcqBtn" onClick={startMCQTest}>
                         Start MCQ Test
                     </button>
-                ) : (
-                    <button className="btn redirectBtn" onClick={openRoomModal}>
-                        Redirect
-                    </button>
-                )}
+                ) : null}
                 {/* Render MCQModal only when isModalOpen is true */}
                 {mcqTestData && <MCQModal isOpen={isModalOpen} closeModal={closeModal} />}
 
