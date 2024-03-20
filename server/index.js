@@ -48,10 +48,16 @@ app.post('/upload/:interviewerId', upload.single('file'), async (req, res) => {
         }));
 
         await Interviewee.insertMany(intervieweesData);
-        res.status(200).send('Data successfully uploaded and stored.');
+        res.status(200).send({
+            message: 'File uploaded successfully!',
+        
+        });
     } catch (error) {
         console.error('Error processing file upload:', error);
-        res.status(500).send('Error processing file upload.');
+        res.status(500).send({
+            message: 'Error uploading file.',
+            error: error.message,
+        });
     }
 });
 
