@@ -44,7 +44,6 @@ const Candidate = () => {
             <tr className="border-b">
               <th className="text-left p-3 px-5">Name</th>
               <th className="text-left p-3 px-5">Email</th>
-              <th className="text-left p-3 px-5">Role</th>
               <th>Action</th>
             </tr>
             {candidates.map((user) => (
@@ -55,12 +54,7 @@ const Candidate = () => {
                 <td className="p-3 px-5">
                   <input type="text" value={user.email} className="bg-transparent" readOnly/>
                 </td>
-                <td className="p-3 px-5">
-                  <select value={user.role} className="bg-transparent" disabled>
-                    <option value="user">user</option>
-                    <option value="admin">admin</option>
-                  </select>
-                </td>
+               
                 <td className="p-3 px-5 flex justify-end">
                   <button 
                     type="button" 
