@@ -82,7 +82,7 @@ const EditorPage = () => {
 
     // Function to leave the room
     const leaveRoom = () => {
-        navigate('/');
+        navigate('/dashboard');
     };
     const openRoomModal = () => {
         setIsModalOpen(true);
