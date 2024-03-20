@@ -1,4 +1,3 @@
-const PythonShell = require('python-shell').PythonShell;
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer'); 
@@ -9,16 +8,19 @@ const app = express();
 const port = 3000;
 const connectDb = require('./config/connect');
 connectDb();
-// const { router } = require('./routes/RoomRoute');
 
 const corsOptions = {
-  origin: ['http://localhost:5137', 'http://localhost:5000'], 
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
-  allowedHeaders: ['Content-Type', 'Authorization'] 
-};
+  origin: ["http://localhost:3000", "http://localhost:5000", 'http://localhost:5173']
+}
 
 app.use(cors(corsOptions));
 app.use(express.json());
+
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*")
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
+  next() 
+  })
 
 const upload = multer({ storage: multer.memoryStorage() });
 

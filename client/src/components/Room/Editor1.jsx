@@ -69,10 +69,10 @@ const Editor1 = ({ socketRef, roomId, initialCode }) => {
 
   const handleChange = (editor, change) => {
     const value = editor;
-    console.log(value) // Get the updated value from the editor state
+    // console.log(value) // Get the updated value from the editor state
     setCode(value); // Update local state with the new value
     socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-      console.log('Received code change', code);
+      // console.log('Received code change', code);
       setCode(code); // Update the code state with the received code
     });
     socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code: value });
