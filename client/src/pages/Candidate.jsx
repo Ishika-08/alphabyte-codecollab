@@ -22,10 +22,9 @@ const Candidate = () => {
         throw new Error(`Error: ${response.status}`);
       }
       const data = await response.json();
-      // Assign a unique hash for each candidate (for the meeting ID)
       const updatedData = data.map(candidate => ({
         ...candidate,
-        meetingHash: uuidv4(), // This will generate a unique hash for each candidate
+        meetingHash: uuidv4(),
       }));
       setCandidates(updatedData);
     } catch (error) {
@@ -33,16 +32,30 @@ const Candidate = () => {
     }
   };
 
-  // Function to handle button click, which should send the room ID to the candidate's email and redirect to the room
   const startInterview = async (user) => {
-    // Function to send the meeting hash via email to the candidate
     const sendMeetingHash = async (email, meetingHash) => {
-      // API call to your backend to send the email
-      // await axios.post('/send-email', { email, meetingHash });
+      try {
+        const response = await fetch('http://localhost:3000/send-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, meetingHash }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Email send failed: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('Email sent successfully:', result);
+      } catch (error) {
+        console.error('Failed to send email:', error);
+      }
     };
 
-    await sendMeetingHash(user.email, user.meetingHash); // Send the email
-    navigate(`/editor/${user.meetingHash}`); // Redirect to the room with the meeting hash
+    await sendMeetingHash(user.email, user.meetingHash);
+    navigate(`/editor/${user.meetingHash}`);
   };
 
   return (
